@@ -6,7 +6,7 @@ on:
 
 jobs:
   sbom-check:
-    uses: ${{ github.repository_owner }}/slim-sbom-flow/.github/workflows/pr-sbom-check-syft.yml@dev-gha-pr
+    uses: ryuuichiroh/slim-sbom-flow/.github/workflows/pr-sbom-check-syft.yml@dev-gha-pr
     secrets:
       DT_API_KEY: ${{ secrets.DT_API_KEY }}
       SSF_SECRET_TOKEN: ${{ secrets.SSF_SECRET_TOKEN }}
