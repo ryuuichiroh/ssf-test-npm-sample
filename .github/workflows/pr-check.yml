@@ -52,6 +52,22 @@ jobs:
       - name: Install Grype
         uses: anchore/scan-action/download-grype@v7
 
+      - name: Verify Grype installation
+        run: |
+          echo "=== Checking Grype installation ==="
+          which grype || echo "grype not found in PATH"
+          echo "PATH: $PATH"
+          echo ""
+          if command -v grype &> /dev/null; then
+            echo "✅ grype command is available"
+            grype version
+          else
+            echo "❌ grype command not found"
+            echo "Searching for grype binary..."
+            find /usr /home -name "grype" 2>/dev/null || echo "No grype binary found"
+            exit 1
+          fi
+
       - name: Generate SBOM with Syft
         run: syft . -o cyclonedx-json=sbom-current.json
 
