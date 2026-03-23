@@ -1,7 +1,7 @@
 {
   "name": "npm-sample",
   "version": "1.0.0",
-  "description": "Test project for Syft + Grype workflow",
+  "description": "SSF Test project for Syft + Grype workflow",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
