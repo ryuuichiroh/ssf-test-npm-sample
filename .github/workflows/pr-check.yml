@@ -65,28 +65,41 @@ jobs:
           echo "SBOM format check:"
           jq -r '.bomFormat, .specVersion' sbom-current.json || echo "Warning: Invalid JSON format"
 
-      - name: Scan vulnerabilities with Grype
+      - name: Scan vulnerabilities with Grype (JSON)
         run: |
-          grype sbom:sbom-current.json -o json > vulnerability-result.json || echo "Grype scan failed"
-          if [ -f vulnerability-result.json ] && [ -s vulnerability-result.json ]; then
-            echo "Vulnerability scan completed"
+          set +e
+          grype sbom:sbom-current.json -o json > vulnerability-result.json
+          GRYPE_EXIT_CODE=$?
+          set -e
+
+          if [ $GRYPE_EXIT_CODE -eq 0 ] && [ -f vulnerability-result.json ] && [ -s vulnerability-result.json ]; then
+            echo "✅ Vulnerability scan completed successfully"
             echo "Result file size: $(wc -c < vulnerability-result.json) bytes"
-            jq '.matches | length' vulnerability-result.json || echo "Invalid JSON format"
+            VULN_COUNT=$(jq '.matches | length' vulnerability-result.json)
+            echo "Found $VULN_COUNT vulnerabilities"
           else
-            echo "No vulnerability results generated"
+            echo "⚠️ Grype scan failed (exit code: $GRYPE_EXIT_CODE)"
+            if [ -f vulnerability-result.json ]; then
+              echo "vulnerability-result.json exists but may be incomplete"
+              cat vulnerability-result.json
+            fi
+            exit 1
           fi
-        continue-on-error: true
 
       - name: Generate HTML vulnerability report
         run: |
-          grype sbom:sbom-current.json -o template -t .ssf/.github/templates/grype-html.tmpl > vulnerability-report.html || echo "HTML report generation failed"
-          if [ -f vulnerability-report.html ] && [ -s vulnerability-report.html ]; then
-            echo "HTML report generated successfully"
+          set +e
+          grype sbom:sbom-current.json -o template -t .ssf/.github/templates/grype-html.tmpl > vulnerability-report.html
+          GRYPE_EXIT_CODE=$?
+          set -e
+
+          if [ $GRYPE_EXIT_CODE -eq 0 ] && [ -f vulnerability-report.html ] && [ -s vulnerability-report.html ]; then
+            echo "✅ HTML report generated successfully"
             echo "Report file size: $(wc -c < vulnerability-report.html) bytes"
           else
-            echo "No HTML report generated"
+            echo "⚠️ HTML report generation failed (exit code: $GRYPE_EXIT_CODE)"
+            exit 1
           fi
-        continue-on-error: true
 
       - name: Get baseline SBOM from Dependency-Track
         id: get-baseline
