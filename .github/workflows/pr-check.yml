@@ -1,0 +1,12 @@
+name: PR SBOM Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sbom-check:
+    uses: ${{ github.repository_owner }}/slim-sbom-flow/.github/workflows/pr-sbom-check-syft.yml@main
+    secrets:
+      DT_API_KEY: ${{ secrets.DT_API_KEY }}
+      SSF_SECRET_TOKEN: ${{ secrets.SSF_SECRET_TOKEN }}
