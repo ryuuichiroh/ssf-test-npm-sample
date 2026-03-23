@@ -51,22 +51,13 @@ jobs:
 
       - name: Install Grype
         uses: anchore/scan-action/download-grype@v7
+        id: grype
 
       - name: Verify Grype installation
         run: |
           echo "=== Checking Grype installation ==="
-          which grype || echo "grype not found in PATH"
-          echo "PATH: $PATH"
-          echo ""
-          if command -v grype &> /dev/null; then
-            echo "✅ grype command is available"
-            grype version
-          else
-            echo "❌ grype command not found"
-            echo "Searching for grype binary..."
-            find /usr /home -name "grype" 2>/dev/null || echo "No grype binary found"
-            exit 1
-          fi
+          echo "Grype command path: ${{ steps.grype.outputs.cmd }}"
+          ${{ steps.grype.outputs.cmd }} version
 
       - name: Generate SBOM with Syft
         run: syft . -o cyclonedx-json=sbom-current.json
@@ -84,7 +75,7 @@ jobs:
       - name: Scan vulnerabilities with Grype (JSON)
         run: |
           set +e
-          grype sbom:sbom-current.json -o json > vulnerability-result.json
+          ${{ steps.grype.outputs.cmd }} sbom:sbom-current.json -o json > vulnerability-result.json
           GRYPE_EXIT_CODE=$?
           set -e
 
@@ -105,7 +96,7 @@ jobs:
       - name: Generate HTML vulnerability report
         run: |
           set +e
-          grype sbom:sbom-current.json -o template -t .ssf/.github/templates/grype-html.tmpl > vulnerability-report.html
+          ${{ steps.grype.outputs.cmd }} sbom:sbom-current.json -o template -t .ssf/.github/templates/grype-html.tmpl > vulnerability-report.html
           GRYPE_EXIT_CODE=$?
           set -e
 
