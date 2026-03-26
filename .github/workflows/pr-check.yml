@@ -55,7 +55,7 @@ jobs:
 
       - name: Generate SBOM with Syft
         run: |
-          syft . --exclude './.ssf' -o cyclonedx-json=sbom-current.json
+          syft . --exclude './.ssf' --exclude './.github' -o cyclonedx-json=sbom-current.json
           echo "SBOM generated: $(jq -r '.bomFormat + " " + .specVersion' sbom-current.json), $(jq '.components | length' sbom-current.json) components"
 
       - name: Scan vulnerabilities with Grype (JSON)
