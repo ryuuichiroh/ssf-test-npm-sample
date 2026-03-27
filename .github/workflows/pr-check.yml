@@ -58,6 +58,14 @@ jobs:
           syft . --exclude './.ssf' --exclude './.github' -o cyclonedx-json=sbom-current.json
           echo "SBOM generated: $(jq -r '.bomFormat + " " + .specVersion' sbom-current.json), $(jq '.components | length' sbom-current.json) components"
 
+      # Syft の仕様により package-lock.json 等が type=file のコンポーネントとして含まれる場合がある。
+      # 除外したい場合は以下のステップのコメントを外す。
+      - name: Filter SBOM components (optional)
+        run: |
+          jq 'del(.components[] | select(.type == "file" and .value == "package-lock.json"))' sbom-current.json > sbom-filtered.json
+          mv sbom-filtered.json sbom-current.json
+          echo "After filter: $(jq '.components | length' sbom-current.json) components"
+
       - name: Scan vulnerabilities with Grype (JSON)
         run: |
           set +e
