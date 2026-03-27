@@ -126,12 +126,15 @@ jobs:
             const yaml = require('yaml');
             const fs = require('fs');
             const config = yaml.parse(fs.readFileSync('$CONFIG_FILE', 'utf-8'));
-            const sbom = JSON.parse(fs.readFileSync('sbom-current.json', 'utf-8'));
-            console.log(config.project_name || sbom.metadata?.component?.name || '');
+            console.log(config.project_name || '');
           ")
 
           if [ -z "$PROJECT_NAME" ]; then
-            echo "Error: project_name not found in config or SBOM metadata"
+            PROJECT_NAME="${{ github.event.repository.name }}"
+          fi
+
+          if [ -z "$PROJECT_NAME" ]; then
+            echo "Error: project_name not found"
             exit 1
           fi
 
