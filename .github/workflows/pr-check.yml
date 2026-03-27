@@ -53,24 +53,18 @@ jobs:
         uses: anchore/scan-action/download-grype@v7
         id: grype
 
-      - name: Verify Grype installation
-        run: |
-          echo "=== Checking Grype installation ==="
-          echo "Grype command path: ${{ steps.grype.outputs.cmd }}"
-          ${{ steps.grype.outputs.cmd }} version
-
       - name: Generate SBOM with Syft
-        run: syft . -o cyclonedx-json=sbom-current.json
-
-      - name: Verify SBOM was generated
         run: |
-          if [ ! -f sbom-current.json ]; then
-            echo "Error: sbom-current.json not generated"
-            exit 1
-          fi
-          echo "SBOM file size: $(wc -c < sbom-current.json) bytes"
-          echo "SBOM format check:"
-          jq -r '.bomFormat, .specVersion' sbom-current.json || echo "Warning: Invalid JSON format"
+          syft . --exclude './.ssf' --exclude './.github' -o cyclonedx-json=sbom-current.json
+          echo "SBOM generated: $(jq -r '.bomFormat + " " + .specVersion' sbom-current.json), $(jq '.components | length' sbom-current.json) components"
+
+      # Syft の仕様により package-lock.json 等が type=file のコンポーネントとして含まれる場合がある。
+      # 除外したい場合は以下のステップのコメントを外す。
+      - name: Filter SBOM components (optional)
+        run: |
+          jq 'del(.components[] | select(.type == "file" and .value == "package-lock.json"))' sbom-current.json > sbom-filtered.json
+          mv sbom-filtered.json sbom-current.json
+          echo "After filter: $(jq '.components | length' sbom-current.json) components"
 
       - name: Scan vulnerabilities with Grype (JSON)
         run: |
@@ -118,12 +112,7 @@ jobs:
             exit 0
           fi
 
-          PRE_VERSION=$(node -e "
-            const yaml = require('yaml');
-            const fs = require('fs');
-            const config = yaml.parse(fs.readFileSync('$CONFIG_FILE', 'utf-8'));
-            console.log(config.pre_version || '');
-          ")
+          PRE_VERSION=$(node .ssf/scripts/dist/config-reader.js "$CONFIG_FILE" "pre_version")
 
           if [ -z "$PRE_VERSION" ]; then
             echo "has_baseline=false" >> $GITHUB_OUTPUT
@@ -136,16 +125,14 @@ jobs:
             exit 1
           fi
 
-          PROJECT_NAME=$(node -e "
-            const yaml = require('yaml');
-            const fs = require('fs');
-            const config = yaml.parse(fs.readFileSync('$CONFIG_FILE', 'utf-8'));
-            const sbom = JSON.parse(fs.readFileSync('sbom-current.json', 'utf-8'));
-            console.log(config.project_name || sbom.metadata?.component?.name || '');
-          ")
+          PROJECT_NAME=$(node .ssf/scripts/dist/config-reader.js "$CONFIG_FILE" "project_name")
 
           if [ -z "$PROJECT_NAME" ]; then
-            echo "Error: project_name not found in config or SBOM metadata"
+            PROJECT_NAME="${{ github.event.repository.name }}"
+          fi
+
+          if [ -z "$PROJECT_NAME" ]; then
+            echo "Error: project_name not found"
             exit 1
           fi
 
