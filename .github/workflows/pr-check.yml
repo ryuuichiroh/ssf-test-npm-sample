@@ -128,10 +128,12 @@ jobs:
             const config = yaml.parse(fs.readFileSync('$CONFIG_FILE', 'utf-8'));
             console.log(config.project_name || '');
           ")
+          echo "Check(1): Project name from config: $PROJECT_NAME"
 
           if [ -z "$PROJECT_NAME" ]; then
             PROJECT_NAME="${{ github.event.repository.name }}"
           fi
+          echo "Check(2): Project name from config: $PROJECT_NAME"
 
           if [ -z "$PROJECT_NAME" ]; then
             echo "Error: project_name not found"
