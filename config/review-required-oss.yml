@@ -1,0 +1,17 @@
+# config/review-required-oss.yml
+version: "1.0"
+
+# パッケージ名ベース
+packages:
+  - name: "lodash"
+    reason: "テスト"
+
+# ライセンスベース
+licenses:
+  - id: "BSD-3-Clause"
+    requires_review: true
+    reason: "テスト"
+  
+  - id: "AGPL-3.0"
+    requires_review: true
+    reason: "強いコピーレフトライセンス"
